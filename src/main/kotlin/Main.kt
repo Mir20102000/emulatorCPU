@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import controller.CpuController
 
 
 @OptIn(ExperimentalUnsignedTypes::class)
@@ -73,11 +74,11 @@ fun App() {
                     state = listState // Передаём состояние списка
                 ) {
                     item {
-                        Text(text = "Instructions:", fontWeight = FontWeight.Bold)
+                        Text(text = "Command memory:", fontWeight = FontWeight.Bold)
                     }
                     items(state.commands) { command ->
                         val modifier = if (command.isCurrent) {
-                            Modifier.background(color = Color(0x7700FF00))
+                            Modifier.background(color = Color(0xffff9800))
                         } else {
                             Modifier
                         }
@@ -96,7 +97,7 @@ fun App() {
                         .width(160.dp)
                 ) {
                     item {
-                        Text(text = "Memory:", fontWeight = FontWeight.Bold)
+                        Text(text = "Data memory:", fontWeight = FontWeight.Bold)
                     }
                     items(state.dataRAM) { memoryCell ->
                         Row {
@@ -117,7 +118,7 @@ fun App() {
                 Column(modifier = Modifier.padding(start = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 
 
-                    Text(text = "Результат:", fontWeight = FontWeight.Bold)
+                    Text(text = "Result:", fontWeight = FontWeight.Bold)
                     state.output.forEach { outputLine ->
                         Text(outputLine)
                     }
@@ -131,9 +132,9 @@ fun App() {
                         onClick = { CpuController.pause() },
                         colors = ButtonDefaults.buttonColors(
                             contentColor = Color(0xffffffff),
-                            backgroundColor = Color(0xff000000)
+                            backgroundColor = Color(0xff0d47a1)
                         )
-                    ) { Text("Приостановить выполнение", textAlign = TextAlign.Center) }
+                    ) { Text("Stop", textAlign = TextAlign.Center) } // остановить
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -142,9 +143,9 @@ fun App() {
                         onClick = { CpuController.resume() },
                         colors = ButtonDefaults.buttonColors(
                             contentColor = Color(0xffffffff),
-                            backgroundColor = Color(0xff000000)
+                            backgroundColor = Color(0xff0d47a1)
                         )
-                    ) { Text("Продолжить выполнение", textAlign = TextAlign.Center) }
+                    ) { Text("Start/Resume", textAlign = TextAlign.Center) } // начать/продолжить
 
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -154,9 +155,9 @@ fun App() {
                         onClick = { CpuController.next() },
                         colors = ButtonDefaults.buttonColors(
                             contentColor = Color(0xffffffff),
-                            backgroundColor = Color(0xff000000)
+                            backgroundColor = Color(0xff0d47a1)
                         )
-                    ) { Text("Следующий шаг", textAlign = TextAlign.Center) }
+                    ) { Text("Next step", textAlign = TextAlign.Center) }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -167,9 +168,9 @@ fun App() {
                         },
                         colors = ButtonDefaults.buttonColors(
                             contentColor = Color(0xffffffff),
-                            backgroundColor = Color(0xff000000)
+                            backgroundColor = Color(0xff0d47a1)
                         )
-                    ) { Text("Сбросить и выполнить файл", textAlign = TextAlign.Center) }
+                    ) { Text("Read file", textAlign = TextAlign.Center) } // Чтение файла
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -180,9 +181,9 @@ fun App() {
                         },
                         colors = ButtonDefaults.buttonColors(
                             contentColor = Color(0xffffffff),
-                            backgroundColor = Color(0xff000000)
+                            backgroundColor = Color(0xff0d47a1)
                         )
-                    ) { Text("Сбросить выполнение", textAlign = TextAlign.Center) }
+                    ) { Text("Reset", textAlign = TextAlign.Center) } // сброс выполнения
 
                 }
 

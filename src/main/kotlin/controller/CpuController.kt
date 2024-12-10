@@ -1,183 +1,13 @@
-// безадресные команды
-// Гарвардская архитектура
-// поиск максимума среди элементов массива
+package controller
 
+import cpu.ArrayItem
+import cpu.Cpu
+import cpu.model.Instruction
+import getBits
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
-
-// Тип команды
-enum class Instructions(val code: UInt) {
-    PUSH(0b0001u),   // При выполнении команды PUSH, следующая команда кладется на вершину стека, т.е. она не команда, а число.
-    READ(0b0010u),   // При выполнении команды в стек кладется число из памяти по адресу, лежащему на вершине стека. Т.е. если вы хотите прочитать число из 100 адреса, то вы должны выполнить следующие команды: PUSH 100 READ.
-    WRITE(0b0011u),  // При выполнении команды, в адрес лежащий на вершине стека, кладется число, которое лежало на стеке под адресом. Оба значения со стека естественно исчезают.
-    DUP(0b0100u),    // Продублировать число на вершине стека
-    DROP(0b0101u),   // Удалить число с вершины стека
-    JMP(0b0110u),    // Загрузить число со стека в регистр-счетчик
-    OUT(0b0111u),    // Вывод из вершины стека
-    CMP(0b1000u),    // Сравнивает два верхних числа на стеке
-    INC(0b1001u),    // Инкремент числа на вершине стека
-    DEC(0b1010u),    // декремент числа на вершине стека
-    JE(0b1011u),     // прыжок с проверкой если равно
-    JG(0b1100u),     // прыжок с проверкой если больше
-    ADD(0b1101u),    // Складывает числа на вершине стека, результат кладется на вершину стека. Слагаемые исчезают со стека.
-    JL(0b1110u),     // прыжок с проверкой если меньше
-    HLT(0b1111u)     // Остановка выполнения программы
-}
-
-
-data class Command(
-    val instructions: Instructions,
-) {
-
-    constructor(code: UInt) : this(
-        instructions = Instructions.values().first { it.code == code.getBits(0, 3) }, // Получение типа команды из 32-битного кода
-    )
-}
-
-@OptIn(ExperimentalUnsignedTypes::class)
-class Cpu {
-
-    val output = mutableListOf<String>()
-    var pc = 0u // счётчик команд - содержит адрес памяти, из которого в данный момент выполняется команда.
-    var sp = 0u // указатель стека - хранит текущую верхнюю позицию стека
-
-
-//    var memory = UIntArray(1024) // единая память для команд и данных
-
-//    var stack = UIntArray(8)
-    var commandRAM = UIntArray(1024) // commandRAM - память команд, в которую будут загружены программы.
-    var dataRAM = UIntArray(1024) // dataRAM - память данных, используется для хранения данных программы
-
-    val stackMemoryStart = 30u
-//    val stackMemoryEnd = 87u
-    val stackMemoryEnd = 45u
-    var flag = 0b001u // флаг для хранения результата сравнения двух чисел
-
-
-    fun loadProgram(program: UIntArray) {
-
-        program.forEachIndexed { index, command -> // записываем в память команд саму программу вычисления максимума
-            commandRAM[index] = command
-        }
-    }
-
-    fun loadArray(array: ArrayItem) {
-        array.elements.forEachIndexed { index, element ->
-            dataRAM[index] = element
-        }
-    }
-
-    @OptIn(ExperimentalUnsignedTypes::class)
-    fun executeCommand() {
-        val command = Command(commandRAM[pc])
-        when (command.instructions) {
-            Instructions.PUSH -> {
-                pc++ // Переход к следующему числу в памяти
-                dataRAM[stackMemoryStart + sp++] = commandRAM[pc] // Помещаем число на вершину стека
-                pc++ // Увеличиваем счетчик команд для перехода к следующей команде
-            }
-
-            Instructions.READ -> {
-                val address = dataRAM[stackMemoryStart + --sp] // Получаем адрес из вершины стека
-                dataRAM[stackMemoryStart + sp++] = dataRAM[address] // Читаем из памяти и кладем значение на вершину стека
-                pc++
-            }
-
-            Instructions.WRITE -> {
-                val address = dataRAM[stackMemoryStart + --sp] // Получаем адрес для записи
-                dataRAM[address] = dataRAM[stackMemoryStart + --sp] // Записываем значение на указанное место в памяти
-                pc++
-            }
-
-            Instructions.DUP -> {
-                dataRAM[stackMemoryStart + sp] = dataRAM[stackMemoryStart + sp - 1u] // Дублируем значение на вершине стека
-                sp++ // Увеличиваем указатель стека
-                pc++
-            }
-
-            Instructions.DROP -> {
-                sp-- // Убираем вершину стека
-                pc++
-            }
-
-            Instructions.JMP -> {
-                val point = dataRAM[stackMemoryStart + --sp]
-                pc = point
-            }
-
-            Instructions.OUT -> {
-                output.add(dataRAM[stackMemoryStart + --sp].toString())
-                pc++
-            }
-
-            Instructions.CMP -> {
-                flag = 1u
-                val b = dataRAM[stackMemoryStart + --sp]
-                val a = dataRAM[stackMemoryStart + --sp]
-                if (b > a) {
-                    //println("больше первое")
-                    flag = flag or 0b010u
-                } else if (a > b) {
-                    //println("больше второе")
-                    flag = flag or 0b100u
-                }
-                pc++
-            }
-
-            Instructions.INC -> {
-                dataRAM[stackMemoryStart + sp - 1u]++ // Инкрементируем значение на вершине стека
-                pc++
-            }
-
-            Instructions.DEC -> {
-                dataRAM[stackMemoryStart + sp - 1u]-- // Декрементируем значение на вершине стека
-                pc++
-            }
-
-            Instructions.JE -> {
-                val point = dataRAM[stackMemoryStart + --sp]
-                if (flag.getBits(2, 2) == 0u && flag.getBits(1, 1) == 0u) { // например, если flag = 0b001 (числа равны), переход произойдет
-                    pc = point    // проверяем число сравнений
-                } else pc++
-                //flag = 1u
-            }
-
-            Instructions.JG -> {
-                val point = dataRAM[stackMemoryStart + --sp]
-                if (flag.getBits(1, 1) == 1u) { // например, если flag = 0b010 (первое число больше второго)
-                    pc = point // проверяем число сравнений
-                } else pc++
-                //flag = 1u
-            }
-
-            Instructions.ADD -> {
-                val b = dataRAM[stackMemoryStart + --sp]
-                val a = dataRAM[stackMemoryStart + --sp]
-                dataRAM[stackMemoryStart + sp++] = a + b // Складываем два верхних значения на стеке
-                pc++
-            }
-
-            Instructions.JL -> {
-                val point = dataRAM[stackMemoryStart + --sp]
-                if (flag.getBits(2, 2) == 1u) { // если flag = 0b100 (первое число меньше второго)
-                    pc = point
-                } else pc++
-                //flag = 1u
-            }
-
-
-            Instructions.HLT -> {
-                flag = 0u
-            }
-
-        }
-    }
-}
-
-@OptIn(ExperimentalUnsignedTypes::class)
-data class ArrayItem(val name: String, val start: UInt, val elements: UIntArray)
 
 @OptIn(ExperimentalStdlibApi::class, ExperimentalUnsignedTypes::class, DelicateCoroutinesApi::class)
 object CpuController {
@@ -243,9 +73,11 @@ object CpuController {
         0b1111u       // 47. HLT        Остановка выполнения программы
     )
 
-    var array = listOf(ArrayItem("data", 0u, uintArrayOf(
-        10u, 77u, 15u, 3u, 18u, 7u, 1u, 111u, 53u, 11u, 21u
-    )))
+    var array = listOf(
+        ArrayItem("data", 0u, uintArrayOf(
+            10u, 77u, 15u, 3u, 18u, 7u, 1u, 111u, 53u, 11u, 21u
+        ))
+    )
 
     init {
         reset()
@@ -269,7 +101,7 @@ object CpuController {
         for (line in lines) {
             val parts = line.split(" ") // делим строку на части
             // если строка состоит из более двух частей и, если первая часть строки совпадает с одним из инструкций из Instructions
-            if (parts.size > 1 && !Instructions.values().map { it.name }.contains(parts[0])) {
+            if (parts.size > 1 && !Instruction.values().map { it.name }.contains(parts[0])) {
                 // если вторая часть строки это числа, разделённые ","
                 if(parts[1].split(",").size > 1 && !parts[1].startsWith(",") && !parts[1].endsWith(",")) {
                     val elements = parts[1].trim().split(",").map { it.trim().toUInt() } // присваиваем числа массиву elements
@@ -301,10 +133,10 @@ object CpuController {
         // работаем с инструкциями
         for (line in lines) {
             val parts = line.split(" ")
-            if (Instructions.values().any { it.name == parts[0] }) {
-                val instruction = Instructions.valueOf(parts[0])
+            if (Instruction.values().any { it.name == parts[0] }) {
+                val instruction = Instruction.valueOf(parts[0])
                 when (instruction) {
-                    Instructions.PUSH -> {
+                    Instruction.PUSH -> {
                         if (parts.size > 1) {
                             program.add(instruction.code)
                             val parts2 = parts[1].split("+")
@@ -318,10 +150,10 @@ object CpuController {
                         }
                     }
 
-                    Instructions.JL, Instructions.JG, Instructions.JE, Instructions.JMP -> {
+                    Instruction.JL, Instruction.JG, Instruction.JE, Instruction.JMP -> {
                         if (parts.size > 1) {
                             if (labels[parts[1]]?.toUInt() != null) {
-                                program.add(Instructions.PUSH.code)
+                                program.add(Instruction.PUSH.code)
                                 program.add(labels[parts[1]]?.toUInt()!!)
                                 program.add(instruction.code)
                             } else {
@@ -340,10 +172,10 @@ object CpuController {
     fun reset(program: UIntArray = uintArrayOf(), array: List<ArrayItem> = listOf()) {
         cpu = Cpu()
         if (program.isEmpty() and array.isEmpty()) {
-            for(i in this.array){
+            for(i in CpuController.array){
                 cpu.loadArray(i)
             }
-            cpu.loadProgram(this.program)
+            cpu.loadProgram(CpuController.program)
         } else {
             for(i in array){
                 cpu.loadArray(i)
@@ -379,7 +211,7 @@ object CpuController {
                     name = if (index > 0 && commands[index - 1] == 0b0001u)
                         value.toInt().toString()
                     else
-                        Instructions.values().find { it.code == value }?.name ?: value.toInt().toString(),
+                        Instruction.values().find { it.code == value }?.name ?: value.toInt().toString(),
                     hexValue = value.toHexString(),
                     isCurrent = index == cpu.pc.toInt()
                 )

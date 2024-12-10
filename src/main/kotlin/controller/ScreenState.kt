@@ -1,3 +1,5 @@
+package controller
+
 data class ScreenState(
     val generalRegisters: List<Register> = emptyList(),
     val dataRAM: List<MemoryCell> = emptyList(),         // Состояние памяти
