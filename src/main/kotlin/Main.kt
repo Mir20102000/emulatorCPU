@@ -164,7 +164,7 @@ fun App() {
                     Button(
                         modifier = Modifier.width(300.dp).height(33.dp),
                         onClick = {
-                            CpuController.resetFile("C:\\Users\\ASUS\\Desktop\\RazrabotkaCPU\\src\\main\\kotlin\\program.txt")
+                            CpuController.resetFile("C:\\Users\\ASUS\\Desktop\\RazrabotkaCPU\\src\\main\\resources\\program.txt")
                         },
                         colors = ButtonDefaults.buttonColors(
                             contentColor = Color(0xffffffff),

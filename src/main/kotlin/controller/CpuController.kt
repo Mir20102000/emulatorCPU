@@ -208,8 +208,13 @@ object CpuController {
             .mapIndexed { index, value ->
                 CommandState(
                     index = index,
-                    name = if (index > 0 && commands[index - 1] == 0b0001u)
-                        value.toInt().toString()
+                    name = if (index > 0 && commands[index - 1] == 0b0001u) { // если команда до этой команды похожа на PUSH и это не первая инструкция
+                        if (index > 1 && commands[index - 1] == 0b0001u && commands[index - 2] == 0b0001u) { // если две последние команды до этой команды похожи на Push
+                            Instruction.values().find { it.code == value }?.name ?: value.toInt().toString() // то это не число, это команда
+                        } else {
+                            value.toInt().toString()
+                        }
+                    }
                     else
                         Instruction.values().find { it.code == value }?.name ?: value.toInt().toString(),
                     hexValue = value.toHexString(),
