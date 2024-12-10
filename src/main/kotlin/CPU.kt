@@ -277,7 +277,7 @@ object CpuController {
                     data.add(
                         ArrayItem(
                             parts[0],
-                            if(data.isEmpty()) cpu.stackMemoryStart + 1u else data.last().start + data.last().elements.size.toUInt() + 3u,
+                            0u,
                             elements.toUIntArray()
                         )
                     )
@@ -313,7 +313,7 @@ object CpuController {
                                     if(parts2[1].toIntOrNull() != null){
                                         program.add(data.find{it.name==parts2[0]}!!.start + parts2[1].toUInt())
                                     } else error("Undefined increase: ${parts[1]}")
-                                } else program.add(cpu.stackMemoryEnd + 1u)
+                                } else program.add(0u)
                             } else program.add(parts[1].toUInt())
                         }
                     }
