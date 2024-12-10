@@ -18,7 +18,7 @@ object CpuController {
     private val _screenState = MutableStateFlow(ScreenState())
     val screenState: StateFlow<ScreenState> = _screenState
 
-    // алгоритм нахождения максимума среди элементов массива
+    // Нахождения максимума среди элементов массива
     var program = uintArrayOf(
         0b0001u, 1u,  // 1. PUSH 89     Кладём в стек 89
         0b0010u,      // 2. READ        Читаем значение из адреса 89, текущий макс элемент (первый)
@@ -79,9 +79,7 @@ object CpuController {
         ))
     )
 
-    init {
-        reset()
-    }
+    init { reset() }
 
     fun resetFile(filePath: String) {
         // Проверка на существование файла
@@ -168,7 +166,6 @@ object CpuController {
         reset(program.toUIntArray(), data)
     }
 
-
     fun reset(program: UIntArray = uintArrayOf(), array: List<ArrayItem> = listOf()) {
         cpu = Cpu()
         if (program.isEmpty() and array.isEmpty()) {
@@ -190,18 +187,18 @@ object CpuController {
 
         val pcRegister = Register("PC", cpu.pc.toString(16).uppercase())
         val spRegister = Register("SP", cpu.sp.toString(16).uppercase())
-        val flag = Register("FLAG", value = cpu.flag.toString(2).padStart(3, '0'))
+        val cmrRegister = Register("CMR", value = cpu.cmp.toString(2).padStart(3, '0'))
 
-        val stackList = cpu.dataRAM.slice(cpu.stackMemoryStart.toInt()..cpu.stackMemoryEnd.toInt()).take(cpu.sp.toInt())
+        val stackList = cpu.dataMemory.slice(cpu.stackStart.toInt()..cpu.stackEnd.toInt()).take(cpu.sp.toInt())
             .mapIndexed { index, value ->
                 Register("S$index", value.toHexString())
             }
 
-        val dataMemoryList = cpu.dataRAM.mapIndexed { index, value ->
+        val dataMemoryList = cpu.dataMemory.mapIndexed { index, value ->
             MemoryCell(index.toString(), value.toHexString())
         }
 
-        val commands = cpu.commandRAM
+        val commands = cpu.commandMemory
         val commandsList = commands.takeWhile { it != 0b1111u }
             .plus(commands.find { it == 0b1111u })
             .filterNotNull()
@@ -223,7 +220,7 @@ object CpuController {
             }
 
         _screenState.value = ScreenState(
-            generalRegisters = listOf(pcRegister, spRegister, flag),
+            generalRegisters = listOf(pcRegister, spRegister, cmrRegister),
             dataRAM = dataMemoryList,
             stack = stackList,
             commands = commandsList,
@@ -232,7 +229,7 @@ object CpuController {
     }
 
     fun resume() {
-        if (_screenState.value.isHalted && executionJob == null && cpu.flag.getBits(0, 0) == 1u) {
+        if (_screenState.value.isHalted && executionJob == null && cpu.cmp.getBits(0, 0) == 1u) {
             _screenState.value = _screenState.value.copy(isHalted = false)
             executionJob = GlobalScope.launch {
                 while (!_screenState.value.isHalted) {
@@ -251,7 +248,7 @@ object CpuController {
     }
 
     fun next() {
-        if (_screenState.value.isHalted && cpu.flag.getBits(0, 0) == 1u) {
+        if (_screenState.value.isHalted && cpu.cmp.getBits(0, 0) == 1u) {
             cpu.executeCommand()
             updateState()
             _screenState.value = _screenState.value.copy(isHalted = true)

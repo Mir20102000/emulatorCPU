@@ -46,7 +46,7 @@ fun App() {
                                 ) {
                                     Text(register.name, modifier = Modifier.width(60.dp))
                                     Text(
-                                        if (register.name != "FLAG") register.value.toInt(radix = 16)
+                                        if (register.name != "CMR") register.value.toInt(radix = 16)
                                             .toString() else register.value
                                     )
                                 }

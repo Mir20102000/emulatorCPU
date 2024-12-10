@@ -5,6 +5,6 @@ data class Command(
 ) {
 
     constructor(code: UInt) : this(
-        instructions = Instruction.values().first { it.code == code }, // Получение типа команды из 32-битного кода
+        instructions = Instruction.values().first { it.code == code },
     )
 }
